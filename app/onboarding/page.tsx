@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 
 async function withTimeout<T>(p: Promise<T>, ms = 20000) {
   return Promise.race([
@@ -11,6 +12,7 @@ async function withTimeout<T>(p: Promise<T>, ms = 20000) {
 export default function Onboarding() {
   const [status, setStatus] = React.useState<"idle"|"running"|"ok"|"error">("idle");
   const [message, setMessage] = React.useState<string>("");
+  const router = useRouter();
 
   async function finish() {
     setStatus("running");
@@ -24,6 +26,7 @@ export default function Onboarding() {
       const j = await res.json();
       setStatus("ok");
       setMessage(`Activation complete. Org ID: ${j?.organisation_id || "unknown"}`);
+      setTimeout(() => router.push("/"), 1500); // <-- auto-redirect
     } catch (e: any) {
       setStatus("error");
       setMessage(e?.message || "Activation failed");
@@ -35,28 +38,37 @@ export default function Onboarding() {
       <h2 style={{fontSize:18, fontWeight:600}}>Onboarding</h2>
       <p>Click once to apply default settings and seed accounts.</p>
 
-      <button
-        onClick={finish}
-        disabled={status === "running"}
-        style={{
-          marginTop:12, padding:"8px 12px", borderRadius:8,
-          background: status === "running" ? "#999" : "#111",
-          color:"#fff", cursor: status === "running" ? "not-allowed" : "pointer"
-        }}
-      >
-        {status === "running" ? "Working…" : "Finish Setup"}
-      </button>
+      <div style={{display:"flex", gap:8, marginTop:12}}>
+        <button
+          onClick={finish}
+          disabled={status === "running"}
+          style={{
+            padding:"8px 12px", borderRadius:8,
+            background: status === "running" ? "#999" : "#111",
+            color:"#fff", cursor: status === "running" ? "not-allowed" : "pointer"
+          }}
+        >
+          {status === "running" ? "Working…" : "Finish Setup"}
+        </button>
+        <a
+          href="/"
+          style={{padding:"8px 12px", borderRadius:8, border:"1px solid #ccc", textDecoration:"none"}}
+        >
+          Go to Home
+        </a>
+      </div>
 
       <div style={{marginTop:12, fontSize:14}}>
         {status === "running" && <span>⏳ {message}</span>}
-        {status === "ok" && <span>✅ {message}</span>}
+        {status === "ok" && <span>✅ {message} — redirecting…</span>}
         {status === "error" && <span>❌ {message}</span>}
       </div>
 
       <div style={{marginTop:16, fontSize:12, color:"#555"}}>
-        Tip: You can also POST to <code>/api/activation/apply</code> directly or check
+        Tip: You can also POST to <code>/api/activation/apply</code> or check
         <a href="/api/health" style={{marginLeft:6, textDecoration:"underline"}}> /api/health</a>.
       </div>
     </main>
   );
 }
+
